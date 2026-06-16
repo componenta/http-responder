@@ -1,0 +1,27 @@
+{
+    "name": "componenta/http-responder",
+    "description": "HTTP response builder for Componenta",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.4",
+        "componenta/arrayable": "^1.0",
+        "componenta/config": "^1.0",
+        "componenta/mimetype-detector": "^1.0",
+        "psr/container": "^2.0",
+        "psr/http-message": "^2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Componenta\\Http\\": "src/"
+        }
+    },
+    "minimum-stability": "stable",
+    "extra": {
+        "componenta": {
+            "config-providers": [
+                "Componenta\\Http\\ResponderConfigProvider"
+            ]
+        }
+    }
+}
