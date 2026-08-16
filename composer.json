@@ -6,7 +6,7 @@
     "require": {
         "php": "^8.4",
         "componenta/arrayable": "^1.0",
-        "componenta/config": "^2.0",
+        "componenta/config": "^2.0.2",
         "componenta/mimetype-detector": "^1.0",
         "psr/container": "^2.0",
         "psr/http-message": "^2.0"
