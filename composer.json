@@ -6,10 +6,23 @@
     "require": {
         "php": "^8.4",
         "componenta/arrayable": "^1.0",
-        "componenta/config": "^2.0.2",
+        "componenta/config": "^3.0.0",
         "componenta/mimetype-detector": "^1.0",
         "psr/container": "^2.0",
-        "psr/http-message": "^2.0"
+        "psr/http-message": "^2.0",
+        "psr/http-factory": "^1.0"
+    },
+    "require-dev": {
+        "nyholm/psr7": "^1.8",
+        "pestphp/pest": "^4.0"
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "scripts": {
+        "test": "@php vendor/bin/pest"
     },
     "autoload": {
         "psr-4": {
@@ -22,6 +35,9 @@
             "config-providers": [
                 "Componenta\\Http\\ResponderConfigProvider"
             ]
+        },
+        "branch-alias": {
+            "dev-main": "1.0.x-dev"
         }
     }
 }

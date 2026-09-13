@@ -61,7 +61,7 @@ final readonly class Responder
      * 7. Stringable -> cast to string, detected by magic bytes
      * 8. resource -> wrapped in stream (application/octet-stream), closed resources throw
      *
-     * Note: If status code is 204 or 304, content will be ignored per RFC 7230.
+     * Note: Responses with status 1xx, 204, 205 or 304 have no content.
      *
      * @param int|null $code HTTP status code (100-599)
      * @param mixed $content Response content
@@ -415,6 +415,10 @@ final readonly class Responder
         $this->validateFilename($filename);
 
         $stream = $this->normalizeBody($body);
+        if (!self::allowsContent($status)) {
+            return $this->responseFactory->createResponse($status);
+        }
+
         $size = $stream->getSize();
 
         $response = $this->responseFactory
@@ -423,12 +427,10 @@ final readonly class Responder
             ->withHeader('Content-Disposition', "$disposition; {$this->encodeFilename($filename)}")
             ->withBody($stream);
 
-        if ($size !== null) {
-            $response = $response->withHeader('Content-Length', (string) $size);
-
-            if ($stream->isSeekable()) {
-                $response = $response->withHeader('Accept-Ranges', 'bytes');
-            }
+        if ($size !== null && $stream->isSeekable()) {
+            $response = $response
+                ->withHeader('Content-Length', (string) $size)
+                ->withHeader('Accept-Ranges', 'bytes');
         }
 
         return $response;
@@ -815,11 +817,16 @@ final readonly class Responder
         );
     }
 
+    private static function allowsContent(int $status): bool
+    {
+        return $status >= 200 && $status !== 204 && $status !== 205 && $status !== 304;
+    }
+
     private function createResponse(string|StreamInterface $content, int $status, string $contentType): ResponseInterface
     {
         $this->validateStatusCode($status);
 
-        if ($status === 204 || $status === 304) {
+        if (!self::allowsContent($status)) {
             return $this->responseFactory->createResponse($status);
         }
 
@@ -837,7 +844,7 @@ final readonly class Responder
 
         $size = $body->getSize();
 
-        if ($size !== null) {
+        if ($size !== null && $body->isSeekable()) {
             $response = $response->withHeader('Content-Length', (string) $size);
         }
 
