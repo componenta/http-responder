@@ -46,7 +46,7 @@ it('preserves content and file headers for statuses that allow content', functio
         ->and($file->getHeaderLine('Content-Length'))->toBe('7')
         ->and($file->getHeaderLine('Content-Type'))->toBe('text/plain')
         ->and($file->getHeaderLine('Content-Disposition'))->toBe('attachment; filename="demo.txt"')
-        ->and($file->getHeaderLine('Accept-Ranges'))->toBe('bytes');
+        ->and($file->hasHeader('Accept-Ranges'))->toBeFalse();
 })->with([200, 203, 206, 303, 305]);
 
 it('applies content rules to download and inline shortcuts', function (bool $inline): void {

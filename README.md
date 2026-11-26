@@ -60,7 +60,7 @@ $file = $responder->downloadFile('/tmp/report.pdf');
 | `json(mixed $data, int $status = 200, int $flags = ...)` | JSON-encodes data with `JSON_THROW_ON_ERROR`, `JSON_UNESCAPED_UNICODE`, and `JSON_UNESCAPED_SLASHES` by default. |
 | `jsonp(mixed $data, string $callback, int $status = 200)` | Creates a JavaScript callback response after validating the callback name. |
 
-When `respond()` receives status `204` or `304`, it returns an empty response even if content is supplied.
+New responses with status 1xx, 204, 205 or 304 omit content. A `ResponseInterface` passed to `respond()` is returned unchanged. For a prohibited body, file helpers do not take ownership of caller streams/resources or open a file unnecessarily. For an actual file response, ownership of the returned stream belongs to the response consumer.
 
 ### Redirects
 
@@ -72,13 +72,13 @@ When `respond()` receives status `204` or `304`, it returns an empty response ev
 | `seeOther(string $url)` | `303` |
 | `temporaryRedirect(string $url)` | `307` |
 | `permanentRedirect(string $url)` | `308` |
-| `back(?string $referer, string $fallback = '/')` | `302` to the referrer or fallback URL. |
+| `back(?string $referer, string $fallback = '/', ?string $trustedOrigin = null)` | `302` to a root-relative referrer or one on the explicitly trusted origin; otherwise fallback. |
 
-Redirect URLs are trimmed and rejected when empty or when they contain control characters.
+Redirect URLs must be non-empty URI references without raw spaces, control characters or backslashes. `redirect()` and its shortcuts require an application-authorized destination. `back()` defaults to root-relative paths; an absolute referrer is allowed only on the exact trusted HTTP(S) origin provided by the application. The fallback must be trusted configuration.
 
 ### Files
 
-`download()` and `inline()` accept a `StreamInterface`, stream resource, or string content. `downloadFile()` and `inlineFile()` read from an absolute filesystem path and auto-detect the content type from the stream when possible.
+`download()` and `inline()` accept a `StreamInterface`, stream resource, or string content. `downloadFile()` and `inlineFile()` read ordinary readable regular filesystem files; stream wrappers and directories are rejected. The application must authorize the path before calling these helpers. MIME detection uses the injected MIME 2 contract and map. A filename must be a valid UTF-8 basename; non-ASCII names get an ASCII fallback plus RFC 8187 `filename*`. The responder never infers range support solely from seekability.
 
 ```php
 $response = $responder->inlineFile('/srv/files/manual.pdf');
@@ -110,3 +110,5 @@ The responder throws `InvalidArgumentException` when it receives unsupported con
 ## Development against the next MIME detector release
 
 The runtime constraint is `componenta/mimetype-detector: ^2.0`. Until that release is published, the audit CI uses the exact public refactor snapshot `8b78dfb1533bcb0548ad8de1d1aed60a2beea2fd` through a local Composer path repository with a temporary `^2.0@dev` constraint. The published package must not depend on a branch alias. The detector is not vendored or modified.
+
+`methodNotAllowed()` preserves the exact case of valid HTTP method tokens and rejects invalid entries. `withEtag()` requires a non-empty RFC 9110 entity-tag value without surrounding quotes. JSONP is legacy script execution, not a safe way to expose private or authenticated data; only use an application-authorized callback and public data. Treat detected MIME types and filenames as metadata, not proof that active content is safe to display inline.

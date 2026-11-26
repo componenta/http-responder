@@ -97,7 +97,7 @@ final readonly class Responder
             return $this->createResponse(
                 $content,
                 $code ?? 200,
-                $contentType ?? $this->detector->detectMimeType($content)?->value ?? self::DEFAULT_BINARY_TYPE,
+                $contentType ?? $this->detector->detectMimeType($content)->value ?? self::DEFAULT_BINARY_TYPE,
             );
         }
 
@@ -127,11 +127,14 @@ final readonly class Responder
             return $this->createResponse(
                 $stringContent,
                 $code ?? 200,
-                $contentType ?? $this->detector->detectMimeType($stringContent)?->value ?? self::DEFAULT_BINARY_TYPE,
+                $contentType ?? $this->detector->detectMimeType($stringContent)->value ?? self::DEFAULT_BINARY_TYPE,
             );
         }
 
         if ($this->isValidResource($content)) {
+            if ($code !== null && !self::allowsContent($code)) {
+                return $this->empty($code);
+            }
             return $this->createResponse(
                 $this->streamFactory->createStreamFromResource($content),
                 $code ?? 200,
@@ -155,7 +158,11 @@ final readonly class Responder
     {
         $this->validateStatusCode($status);
 
-        return $this->responseFactory->createResponse($status);
+        $response = $this->responseFactory->createResponse($status);
+        if ($response->getBody()->getSize() !== 0) {
+            $response = $response->withBody($this->streamFactory->createStream());
+        }
+        return $response->withoutHeader('Content-Length')->withoutHeader('Transfer-Encoding')->withoutHeader('Trailer');
     }
 
     /**
@@ -237,8 +244,7 @@ final readonly class Responder
     {
         $this->validateStatusCode($status);
 
-        return $this->responseFactory
-            ->createResponse($status)
+        return $this->empty($status)
             ->withHeader('Location', $this->validateAndSanitizeUrl($url));
     }
 
@@ -304,18 +310,61 @@ final readonly class Responder
     }
 
     /**
-     * Redirect back to referer or fallback URL
-     *
-     * @param string|null $referer The HTTP Referer header value
-     * @param string $fallback Fallback URL if referer is empty or invalid
-     *
-     * @throws InvalidArgumentException If resulting URL is empty or contains invalid control characters
+     * Redirect back to a root-relative path or an absolute referrer on an
+     * explicitly configured trusted HTTP(S) origin. Otherwise use fallback.
+     * The application must provide a trusted fallback, never request input.
      */
-    public function back(?string $referer, string $fallback = '/'): ResponseInterface
+    public function back(?string $referer, string $fallback = '/', ?string $trustedOrigin = null): ResponseInterface
     {
-        $referer = $referer !== null ? trim($referer) : '';
+        $origin = null;
+        if ($trustedOrigin !== null) {
+            $origin = self::canonicalOrigin($trustedOrigin);
+            if ($origin === null) {
+                throw new InvalidArgumentException('Trusted redirect origin must be an explicit HTTP(S) origin.');
+            }
+        }
+        if ($referer !== null && $referer !== ''
+            && preg_match('/[\x00-\x20\x7f]/', $referer) !== 1
+            && !str_contains($referer, '\\')) {
+            if (str_starts_with($referer, '/') && !str_starts_with($referer, '//')) {
+                return $this->redirect($referer, 302);
+            }
+            if ($origin !== null && preg_match('~\A(https?://[^/?#]+)(?:[/?#].*)?\z~iD', $referer, $parts) === 1
+                && self::canonicalOrigin($parts[1]) === $origin) {
+                return $this->redirect($referer, 302);
+            }
+        }
 
-        return $this->redirect($referer !== '' ? $referer : $fallback, 302);
+        return $this->redirect($fallback, 302);
+    }
+
+    private static function canonicalOrigin(string $origin): ?string
+    {
+        if (preg_match('~\A(https?)://(\[[0-9A-Fa-f:.]+\]|[A-Za-z0-9.-]+)(?::([0-9]{1,5}))?\z~iD', $origin, $parts) !== 1) {
+            return null;
+        }
+        $scheme = strtolower($parts[1]);
+        $host = strtolower($parts[2]);
+        if (str_starts_with($host, '[')) {
+            $address = substr($host, 1, -1);
+            if (filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) === false) {
+                return null;
+            }
+            $binary = inet_pton($address);
+            $canonical = $binary === false ? false : inet_ntop($binary);
+            if ($canonical === false) {
+                return null;
+            }
+            $host = '[' . $canonical . ']';
+        } elseif (filter_var($host, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME) === false
+            && filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
+            return null;
+        }
+        $port = isset($parts[3]) ? (int) $parts[3] : ($scheme === 'https' ? 443 : 80);
+        if ($port < 1 || $port > 65535) {
+            return null;
+        }
+        return $scheme . '://' . $host . ':' . $port;
     }
 
     /**
@@ -416,10 +465,11 @@ final readonly class Responder
         $this->validateDisposition($disposition);
         $this->validateFilename($filename);
 
-        $stream = $this->normalizeBody($body);
         if (!self::allowsContent($status)) {
-            return $this->responseFactory->createResponse($status);
+            $this->validateFileBody($body);
+            return $this->empty($status);
         }
+        $stream = $this->normalizeBody($body);
 
         $size = $stream->getSize();
 
@@ -427,12 +477,13 @@ final readonly class Responder
             ->createResponse($status)
             ->withHeader('Content-Type', $contentType ?? $this->getMimeTypeByExtension($filename))
             ->withHeader('Content-Disposition', "$disposition; {$this->encodeFilename($filename)}")
+            ->withoutHeader('Content-Length')
+            ->withoutHeader('Transfer-Encoding')
+            ->withoutHeader('Trailer')
             ->withBody($stream);
 
         if ($size !== null && $stream->isSeekable()) {
-            $response = $response
-                ->withHeader('Content-Length', (string) $size)
-                ->withHeader('Accept-Ranges', 'bytes');
+            $response = $response->withHeader('Content-Length', (string) $size);
         }
 
         return $response;
@@ -458,25 +509,31 @@ final readonly class Responder
         int $status = 200,
         string $disposition = 'attachment',
     ): ResponseInterface {
+        $this->validateStatusCode($status);
+        $this->validateDisposition($disposition);
+        $this->validateFilePath($filePath);
+        $filename ??= basename($filePath);
+        $this->validateFilename($filename);
+        if (!self::allowsContent($status)) {
+            return $this->empty($status);
+        }
+
         $stream = $this->createFileStream($filePath);
-
-        if ($filename === null) {
-            $filename = basename($filePath);
-
-            if ($filename === '') {
-                throw new InvalidArgumentException(
-                    sprintf('Cannot extract filename from path: %s', $filePath),
-                );
+        try {
+            if ($contentType === null) {
+                $contentType = $stream->isSeekable()
+                    ? ($this->detector->detectMimeType($stream)->value ?? $this->getMimeTypeByExtension($filename))
+                    : $this->getMimeTypeByExtension($filename);
             }
+            return $this->file($stream, $filename, $contentType, $status, $disposition);
+        } catch (\Throwable $exception) {
+            try {
+                $stream->close();
+            } catch (\Throwable) {
+                // Preserve the original failure.
+            }
+            throw $exception;
         }
-
-        if ($contentType === null) {
-            $contentType = $stream->isSeekable()
-                ? ($this->detector->detectMimeType($stream)?->value ?? $this->getMimeTypeByExtension($filename))
-                : $this->getMimeTypeByExtension($filename);
-        }
-
-        return $this->file($stream, $filename, $contentType, $status, $disposition);
     }
 
     /**
@@ -504,8 +561,7 @@ final readonly class Responder
         $this->validateFilename($filename);
         $this->validateHeaderValue($internalPath, 'X-Accel-Redirect path');
 
-        $response = $this->responseFactory
-            ->createResponse(200)
+        $response = $this->empty(200)
             ->withHeader('X-Accel-Redirect', $internalPath)
             ->withHeader('Content-Type', $contentType ?? $this->getMimeTypeByExtension($filename))
             ->withHeader('Content-Disposition', "$disposition; {$this->encodeFilename($filename)}");
@@ -540,8 +596,7 @@ final readonly class Responder
         $this->validateFilename($filename);
         $this->validateHeaderValue($filePath, 'X-Sendfile path');
 
-        return $this->responseFactory
-            ->createResponse(200)
+        return $this->empty(200)
             ->withHeader('X-Sendfile', $filePath)
             ->withHeader('Content-Type', $contentType ?? $this->getMimeTypeByExtension($filename))
             ->withHeader('Content-Disposition', "$disposition; {$this->encodeFilename($filename)}");
@@ -595,24 +650,25 @@ final readonly class Responder
     /**
      * 405 Method Not Allowed (RFC 7231)
      *
-     * @param list<non-empty-string> $allowedMethods Allowed HTTP methods (must not be empty)
+     * @param array<array-key, mixed> $allowedMethods Non-empty array of case-sensitive HTTP method tokens
      *
      * @throws InvalidArgumentException If allowedMethods is empty
      */
     public function methodNotAllowed(array $allowedMethods): ResponseInterface
     {
-        $methods = array_unique(array_filter(
-            array_map(static fn($m) => is_string($m) ? strtoupper(trim($m)) : '', $allowedMethods),
-            static fn($m) => $m !== '',
-        ));
-
-        if ($methods === []) {
+        if ($allowedMethods === []) {
             throw new InvalidArgumentException('Allowed methods array cannot be empty');
         }
+        $methods = [];
+        foreach ($allowedMethods as $method) {
+            if (!is_string($method) || preg_match("@^[!#$%&'*+.^_\x60|~0-9A-Za-z-]+$@D", $method) !== 1) {
+                throw new InvalidArgumentException('Allowed methods must be valid case-sensitive HTTP method tokens.');
+            }
+            $methods[] = $method;
+        }
 
-        return $this->responseFactory
-            ->createResponse(405)
-            ->withHeader('Allow', implode(', ', $methods));
+        return $this->empty(405)
+            ->withHeader('Allow', implode(', ', array_unique($methods)));
     }
 
     /**
@@ -704,7 +760,7 @@ final readonly class Responder
      */
     public function notModified(): ResponseInterface
     {
-        return $this->responseFactory->createResponse(304);
+        return $this->empty(304);
     }
 
     /**
@@ -714,7 +770,7 @@ final readonly class Responder
      */
     public function preconditionFailed(): ResponseInterface
     {
-        return $this->responseFactory->createResponse(412);
+        return $this->empty(412);
     }
 
     /**
@@ -728,8 +784,7 @@ final readonly class Responder
     {
         $this->validateNonNegative($totalSize, 'Total size');
 
-        return $this->responseFactory
-            ->createResponse(416)
+        return $this->empty(416)
             ->withHeader('Content-Range', "bytes */$totalSize");
     }
 
@@ -829,7 +884,7 @@ final readonly class Responder
         $this->validateStatusCode($status);
 
         if (!self::allowsContent($status)) {
-            return $this->responseFactory->createResponse($status);
+            return $this->empty($status);
         }
 
         $body = $content instanceof StreamInterface
@@ -838,6 +893,10 @@ final readonly class Responder
 
         $response = $this->responseFactory
             ->createResponse($status)
+            ->withoutHeader('Content-Length')
+            ->withoutHeader('Transfer-Encoding')
+            ->withoutHeader('Trailer')
+            ->withoutHeader('Content-Type')
             ->withBody($body);
 
         if ($contentType !== '') {
@@ -853,34 +912,22 @@ final readonly class Responder
         return $response;
     }
 
-    /**
-     * Creates a stream from file path, handling errors atomically
-     *
-     * @throws InvalidArgumentException If file cannot be opened
-     */
+    /** Only ordinary local filesystem paths may be passed to the file API. */
+    private function validateFilePath(string $filePath): void
+    {
+        if ($filePath === '' || str_contains($filePath, "\0")
+            || preg_match('~\A[A-Za-z][A-Za-z0-9+.-]*://~', $filePath) === 1
+            || !is_file($filePath) || !is_readable($filePath)) {
+            throw new InvalidArgumentException('File path must identify a readable regular file.');
+        }
+    }
+
     private function createFileStream(string $filePath): StreamInterface
     {
         try {
             return $this->streamFactory->createStreamFromFile($filePath, 'rb');
-        } catch (\Throwable $e) {
-            if (!file_exists($filePath)) {
-                throw new InvalidArgumentException(
-                    sprintf('File does not exist: %s', $filePath),
-                    previous: $e,
-                );
-            }
-
-            if (!is_readable($filePath)) {
-                throw new InvalidArgumentException(
-                    sprintf('File is not readable: %s', $filePath),
-                    previous: $e,
-                );
-            }
-
-            throw new InvalidArgumentException(
-                sprintf('Cannot open file: %s', $filePath),
-                previous: $e,
-            );
+        } catch (\RuntimeException | InvalidArgumentException $exception) {
+            throw new InvalidArgumentException('Cannot open file for reading.', previous: $exception);
         }
     }
 
@@ -918,9 +965,19 @@ final readonly class Responder
         );
     }
 
+    private function validateFileBody(mixed $body): void
+    {
+        if (!$body instanceof StreamInterface && !is_string($body) && !$this->isValidResource($body)) {
+            throw new InvalidArgumentException(
+                sprintf('Body must be a StreamInterface, resource, or string content. Got: %s', get_debug_type($body)),
+            );
+        }
+    }
+
+    /** @phpstan-assert-if-true resource $value */
     private function isValidResource(mixed $value): bool
     {
-        return is_resource($value) && get_resource_type($value) !== 'Unknown';
+        return is_resource($value) && get_resource_type($value) === 'stream';
     }
 
     private function validateStatusCode(int $status): void
@@ -954,59 +1011,38 @@ final readonly class Responder
 
     private function validateFilename(string $filename): void
     {
-        if (trim($filename) === '') {
-            throw new InvalidArgumentException('Filename cannot be empty');
-        }
-
-        if (str_contains($filename, '/') || str_contains($filename, '\\')) {
-            throw new InvalidArgumentException('Filename cannot contain path separators');
-        }
-
-        if (str_contains($filename, "\0")) {
-            throw new InvalidArgumentException('Filename cannot contain null bytes');
+        if (trim($filename) === '' || in_array(trim($filename), ['.', '..'], true)
+            || preg_match('//u', $filename) !== 1
+            || preg_match('/[\x00-\x1f\x7f]/', $filename) === 1
+            || str_contains($filename, '/') || str_contains($filename, '\\')) {
+            throw new InvalidArgumentException('Filename must be a non-empty UTF-8 basename without control characters.');
         }
     }
 
     private function validateJsonpCallback(string $callback): void
     {
-        if ($callback === '') {
-            throw new InvalidArgumentException('JSONP callback name cannot be empty');
-        }
-
-        if (!preg_match('/^[$a-zA-Z_][$a-zA-Z0-9_]*(?:\.[$a-zA-Z_][$a-zA-Z0-9_]*|\[[\'"]\w+[\'"]])*$/', $callback)) {
-            throw new InvalidArgumentException(
-                sprintf('Invalid JSONP callback name: "%s"', $callback),
-            );
+        if (preg_match('/\A[$a-zA-Z_][$a-zA-Z0-9_]*(?:\.[$a-zA-Z_][$a-zA-Z0-9_]*|\[(?:\'[a-zA-Z0-9_]+\'|"[a-zA-Z0-9_]+")\])*\z/D', $callback) !== 1) {
+            throw new InvalidArgumentException('Invalid JSONP callback name.');
         }
     }
 
     private function validateAndSanitizeUrl(string $url): string
     {
-        $url = trim($url);
-
-        if ($url === '') {
-            throw new InvalidArgumentException('Redirect URL cannot be empty');
+        if (preg_match('/[\x00-\x1f\x7f]/', $url) === 1) {
+            throw new InvalidArgumentException('Redirect URL contains invalid control characters.');
         }
-
-        if (preg_match('/[\x00-\x1F\x7F]/', $url)) {
-            throw new InvalidArgumentException('Redirect URL contains invalid control characters');
+        $url = trim($url, ' ');
+        if ($url === '' || str_contains($url, ' ') || str_contains($url, '\\')) {
+            throw new InvalidArgumentException('Redirect URL must be a non-empty URI reference without spaces or backslashes.');
         }
-
         return $url;
     }
 
     private function validateEtag(string $etag): void
     {
-        if ($etag === '') {
-            throw new InvalidArgumentException('ETag cannot be empty');
-        }
-
-        if (str_contains($etag, '"')) {
-            throw new InvalidArgumentException('ETag value must not contain double quotes');
-        }
-
-        if (preg_match('/[\x00-\x1F\x7F]/', $etag)) {
-            throw new InvalidArgumentException('ETag contains invalid control characters');
+        // RFC 9110 etagc: %x21 / %x23-7E / obs-text.
+        if ($etag === '' || preg_match('/[\x00-\x20\x22\x7f]/', $etag) === 1) {
+            throw new InvalidArgumentException('ETag must be non-empty and contain only valid entity-tag characters.');
         }
     }
 
@@ -1028,13 +1064,15 @@ final readonly class Responder
      */
     private function encodeFilename(string $filename): string
     {
-        $sanitized = preg_replace('/[\x00-\x1F\x7F"\\\\]/', '_', $filename) ?? $filename;
-
-        if (preg_match('/^[\x20-\x7E]+$/', $sanitized) && $sanitized !== '') {
-            return "filename=\"$sanitized\"";
+        // RFC 6266: legacy filename must be ASCII and not contain sequences
+        // some clients mistake for escapes. Preserve the real UTF-8 name
+        // in filename* when any character needed a fallback.
+        $fallback = preg_replace('/[^\x20-\x7e]|["\\\\]|%(?=[0-9A-Fa-f]{2})/u', '_', $filename);
+        if ($fallback === null) {
+            throw new InvalidArgumentException('Filename cannot be encoded.');
         }
-
-        return "filename=\"$sanitized\"; filename*=UTF-8''" . rawurlencode($filename);
+        $header = 'filename="' . $fallback . '"';
+        return $fallback === $filename ? $header : $header . "; filename*=UTF-8''" . rawurlencode($filename);
     }
 
     private function getMimeTypeByExtension(string $filename): string
