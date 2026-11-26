@@ -74,3 +74,52 @@ it('does not inherit conflicting representation or offload metadata from a respo
     expect($responder->xAccelRedirect('/internal/new', 'new.txt', 'text/plain')->getHeaderLine('X-Accel-Redirect'))
         ->toBe('/internal/new');
 })->with('psr17 factories');
+
+
+it('replaces conflicting factory redirect metadata while retaining global security fields', function (\Closure $make): void {
+    $factory = $make();
+    $responses = new class($factory) implements ResponseFactoryInterface {
+        public function __construct(private readonly ResponseFactoryInterface $factory) {}
+        public function createResponse(int $code = 200, string $reasonPhrase = ''): ResponseInterface
+        {
+            return $this->factory->createResponse($code, $reasonPhrase)
+                ->withHeader('Location', '/old')
+                ->withHeader('Status', '302 Found')
+                ->withHeader('X-Content-Type-Options', 'nosniff');
+        }
+    };
+    $responder = new Responder($responses, $factory);
+
+    $response = $responder->forbidden();
+    expect($response->getStatusCode())->toBe(403)
+        ->and($response->hasHeader('Location'))->toBeFalse()
+        ->and($response->hasHeader('Status'))->toBeFalse()
+        ->and($response->getHeaderLine('X-Content-Type-Options'))->toBe('nosniff');
+
+    $redirect = $responder->redirect('/new');
+    expect($redirect->getHeader('Location'))->toBe(['/new'])
+        ->and($redirect->hasHeader('Status'))->toBeFalse()
+        ->and($redirect->getStatusCode())->toBe(302);
+})->with('psr17 factories');
+
+it('replaces conflicting nginx cache lifetime when selecting a new cache policy', function (\Closure $make): void {
+    $factory = $make();
+    $responder = new Responder($factory, $factory);
+    $original = $responder->text('data')
+        ->withHeader('X-Accel-Expires', '3600')
+        ->withHeader('Expires', 'Fri, 27 Nov 2026 12:00:00 GMT')
+        ->withHeader('Vary', 'Accept-Encoding');
+
+    $private = $responder->withNoCache($original);
+    expect($private->getHeaderLine('Cache-Control'))->toBe('no-store, no-cache, must-revalidate, max-age=0')
+        ->and($private->hasHeader('X-Accel-Expires'))->toBeFalse()
+        ->and($private->hasHeader('Expires'))->toBeFalse()
+        ->and($private->getHeaderLine('Vary'))->toBe('Accept-Encoding');
+
+    $public = $responder->withCache($original, 60, true);
+    expect($public->getHeaderLine('Cache-Control'))->toBe('public, max-age=60')
+        ->and($public->hasHeader('X-Accel-Expires'))->toBeFalse()
+        ->and($public->hasHeader('Expires'))->toBeFalse()
+        ->and($public->getHeaderLine('Vary'))->toBe('Accept-Encoding')
+        ->and($original->getHeaderLine('X-Accel-Expires'))->toBe('3600');
+})->with('psr17 factories');

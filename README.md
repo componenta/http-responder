@@ -109,7 +109,7 @@ The responder throws `InvalidArgumentException` when it receives unsupported con
 
 ## Development against the next MIME detector release
 
-The runtime constraint is `componenta/mimetype-detector: ^2.0`. Until that release is published, the audit CI uses the exact public refactor snapshot `06f55cfe8d4d0d9f865b4d0ac89a87f12ef4d95e` through a local Composer path repository with a temporary `^2.0@dev` constraint. The published package must not depend on a branch alias. The detector is not vendored or modified.
+The runtime constraint is `componenta/mimetype-detector: ^2.0`. Until that release is published, the audit CI uses the exact public refactor snapshot `7131260a4f28724ff3e111a019d0260a2edacc57` through a local Composer path repository with a temporary `^2.0@dev` constraint. The published package must not depend on a branch alias. The detector is not vendored or modified.
 
 `methodNotAllowed()` preserves the exact case of valid HTTP method tokens and rejects invalid entries. `withEtag()` requires a non-empty RFC 9110 entity-tag value without surrounding quotes. JSONP is legacy script execution, not a safe way to expose private or authenticated data; only use an application-authorized callback and public data. Treat detected MIME types and filenames as metadata, not proof that active content is safe to display inline.
 
