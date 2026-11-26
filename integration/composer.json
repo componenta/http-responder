@@ -1,0 +1,42 @@
+{
+    "name": "componenta/http-response-integration-fixture",
+    "description": "Isolated HTTP response integration with DI 6 and Config 4",
+    "type": "project",
+    "license": "MIT",
+    "repositories": [
+        {
+            "type": "path",
+            "url": "..",
+            "options": {
+                "symlink": true,
+                "versions": {
+                    "componenta/http-responder": "2.0.x-dev"
+                }
+            }
+        },
+        {
+            "type": "path",
+            "url": "../.audit/*",
+            "options": {
+                "symlink": true,
+                "versions": {
+                    "componenta/mimetype-detector": "2.0.x-dev",
+                    "componenta/http-emitter": "2.0.x-dev",
+                    "componenta/di": "6.0.x-dev"
+                }
+            }
+        }
+    ],
+    "require": {
+        "php": "^8.5.13",
+        "componenta/http-responder": "2.0.x-dev@dev",
+        "componenta/http-emitter": "2.0.x-dev@dev",
+        "componenta/mimetype-detector": "2.0.x-dev@dev",
+        "componenta/di": "6.0.x-dev@dev",
+        "componenta/config": "^4.0",
+        "nyholm/psr7": "^1.8.2",
+        "psr/http-factory": "^1.1"
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

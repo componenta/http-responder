@@ -8,3 +8,5 @@ vendor/
 integration/composer.lock
 /.audit/
 /composer.lock
+/integration/vendor/
+/integration/composer.lock
