@@ -870,7 +870,7 @@ final readonly class Responder
             'Last-Modified',
             DateTimeImmutable::createFromInterface($dateTime)
                 ->setTimezone(new \DateTimeZone('GMT'))
-                ->format(DateTimeInterface::RFC7231),
+                ->format('D, d M Y H:i:s \G\M\T'),
         );
     }
 
