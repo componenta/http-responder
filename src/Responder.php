@@ -826,7 +826,8 @@ final readonly class Responder
             $directives[] = 'immutable';
         }
 
-        return $response->withHeader('Cache-Control', implode(', ', $directives));
+        return $this->withoutPreviousCachePolicy($response)
+            ->withHeader('Cache-Control', implode(', ', $directives));
     }
 
     /**
@@ -834,9 +835,24 @@ final readonly class Responder
      */
     public function withNoCache(ResponseInterface $response): ResponseInterface
     {
-        return $response
+        return $this->withoutPreviousCachePolicy($response)
             ->withHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
             ->withHeader('Pragma', 'no-cache');
+    }
+
+    /**
+     * An explicit new policy replaces old expiration overrides. In
+     * particular, nginx can give X-Accel-Expires priority over Cache-Control.
+     */
+    private function withoutPreviousCachePolicy(ResponseInterface $response): ResponseInterface
+    {
+        foreach (['X-Accel-Expires', 'Expires', 'Pragma'] as $field) {
+            if ($response->hasHeader($field)) {
+                $response = $response->withoutHeader($field);
+            }
+        }
+
+        return $response;
     }
 
     /**
@@ -890,6 +906,7 @@ final readonly class Responder
         foreach ($response->getHeaders() as $name => $_) {
             if (in_array(strtolower($name), [
                 'content-length', 'transfer-encoding', 'trailer', 'content-type',
+                'location', 'status',
                 'content-encoding', 'content-language', 'content-location',
                 'content-range', 'content-disposition', 'content-md5', 'content-digest',
                 'repr-digest', 'accept-ranges', 'etag', 'last-modified',

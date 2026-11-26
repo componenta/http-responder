@@ -13,3 +13,5 @@ The builder is not a transport, authorization layer, range handler, or upload sa
 - Unreadable body streams are rejected. Status and response fields are validated before a caller resource is wrapped.
 
 - New responses discard stale representation, framing and file-offload defaults from a response factory; unrelated application-wide headers are retained.
+
+- New cache policies replace previous expiration overrides (`X-Accel-Expires`, `Expires`, `Pragma`). New responses do not inherit a factory's `Location` or CGI `Status`.

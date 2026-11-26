@@ -122,3 +122,5 @@ Seekable response bodies are rewound before being attached so a consumer can rea
 When content is permitted, body streams must be readable. Status and response fields are validated before wrapping caller-supplied resources; once successfully wrapped, stream ownership follows PSR-7/PSR-17 semantics.
 
 New responses discard factory defaults that describe a different representation, message framing, file offload or range capability. Application-wide fields (for example, security headers) are retained. The `respond()` pass-through for an existing `ResponseInterface` still returns it unchanged. Contract tests run against Nyholm and Guzzle PSR-17 factories.
+
+New responses also discard a factory's previous `Location` and CGI `Status` fields. `withCache()` and `withNoCache()` replace existing expiration overrides (`X-Accel-Expires`, `Expires`, `Pragma`); `withNoCache()` sets `Pragma: no-cache` again. They retain `Vary` and validators. An explicit new nginx cache override can be attached afterwards by the application.
