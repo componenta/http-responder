@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: componenta/http-emitter
-          ref: 5cb7c204845fc38100961e0d0933b48c892099d8
+          ref: 3faf7f95a0936d1031593e895f1a5f9edef0a1d8
           path: .audit/http-emitter
           persist-credentials: false
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1

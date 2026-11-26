@@ -22,6 +22,7 @@ $scenarios = [
     'range-error' => [416, '', ['content-range' => 'bytes */20', 'content-length' => '0']],
     'offload' => [200, '', ['x-accel-redirect' => '/internal/data', 'content-length' => null]],
     'detected' => [200, 'plain text', ['content-length' => '10']],
+    'denied' => [403, 'denied', ['content-length' => '6', 'x-accel-redirect' => null, 'x-sendfile' => null, 'content-encoding' => null, 'etag' => null]],
 ];
 
 foreach ($scenarios as $name => [$expectedStatus, $expectedBody, $expectedFields]) {
