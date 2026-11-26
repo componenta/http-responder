@@ -112,3 +112,7 @@ The responder throws `InvalidArgumentException` when it receives unsupported con
 The runtime constraint is `componenta/mimetype-detector: ^2.0`. Until that release is published, the audit CI uses the exact public refactor snapshot `8b78dfb1533bcb0548ad8de1d1aed60a2beea2fd` through a local Composer path repository with a temporary `^2.0@dev` constraint. The published package must not depend on a branch alias. The detector is not vendored or modified.
 
 `methodNotAllowed()` preserves the exact case of valid HTTP method tokens and rejects invalid entries. `withEtag()` requires a non-empty RFC 9110 entity-tag value without surrounding quotes. JSONP is legacy script execution, not a safe way to expose private or authenticated data; only use an application-authorized callback and public data. Treat detected MIME types and filenames as metadata, not proof that active content is safe to display inline.
+
+## Tests and benchmarks
+
+`composer check` runs Pest and PHPStan. `composer mutation` uses the package's own source and Pest mutation testing. `composer benchmark` runs PHPBench over construction, text, JSON, response dispatch, redirects, downloads, empty responses and cache headers. The MIME detector is replaced with a fixed public-contract stub in these benchmarks; the detector itself is not benchmarked.
