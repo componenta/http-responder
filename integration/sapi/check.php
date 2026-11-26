@@ -23,6 +23,13 @@ $scenarios = [
     'offload' => [200, '', ['x-accel-redirect' => '/internal/data', 'content-length' => null]],
     'detected' => [200, 'plain text', ['content-length' => '10']],
     'denied' => [403, 'denied', ['content-length' => '6', 'x-accel-redirect' => null, 'x-sendfile' => null, 'content-encoding' => null, 'etag' => null]],
+    'private-cache' => [200, 'private', [
+        'content-length' => '7',
+        'cache-control' => 'no-store, no-cache, must-revalidate, max-age=0',
+        'pragma' => 'no-cache',
+        'x-accel-expires' => null,
+        'expires' => null,
+    ]],
 ];
 
 foreach ($scenarios as $name => [$expectedStatus, $expectedBody, $expectedFields]) {

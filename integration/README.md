@@ -3,7 +3,7 @@
 This fixture installs Config 4 and pinned snapshots of the other dependencies:
 
 - `componenta/mimetype-detector` — `7131260a4f28724ff3e111a019d0260a2edacc57`
-- `componenta/http-emitter` — `3faf7f95a0936d1031593e895f1a5f9edef0a1d8`
+- `componenta/http-emitter` — `73a3d13d7d9f2033cf170e9d73dd1e6b2d72ddff`
 - `componenta/di` — `e203077d12048936f078d37d1cf3badd661e1716`
 
 The production dependency remains `componenta/mimetype-detector: ^2.0`; the unreleased snapshot is used only for isolated CI. No MIME detector tests, static analysis or benchmarks are run in this repository.

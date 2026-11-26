@@ -31,9 +31,17 @@ $response = match ($scenario) {
     'offload' => $responder->xAccelRedirect('/internal/data', 'data.bin', 'application/octet-stream'),
     'detected' => $responder->respond(content: 'plain text'),
     'denied' => $responder->forbidden('denied'),
+    'private-cache' => $responder->withNoCache(
+        $responder->text('private')->withHeader('X-Accel-Expires', '7200')
+            ->withHeader('Expires', 'Fri, 27 Nov 2026 12:00:00 GMT')
+    ),
     default => throw new LogicException('Unknown interoperability scenario.'),
 };
 
+if ($scenario === 'private-cache') {
+    header('X-Accel-Expires: 3600');
+    header('Expires: Fri, 27 Nov 2026 13:00:00 GMT');
+}
 if ($scenario === 'denied') {
     header('X-Accel-Redirect: /internal/old');
     header('X-Sendfile: /srv/old');
