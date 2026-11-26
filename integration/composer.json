@@ -20,7 +20,6 @@
             "options": {
                 "symlink": true,
                 "versions": {
-                    "componenta/http-emitter": "2.0.x-dev",
                     "componenta/di": "6.0.x-dev"
                 }
             }
@@ -29,7 +28,7 @@
     "require": {
         "php": "^8.5.13",
         "componenta/http-responder": "^2.0@dev",
-        "componenta/http-emitter": "^2.0@dev",
+        "componenta/http-emitter": "^2.0",
         "componenta/mimetype-detector": "^2.0",
         "componenta/di": "^6.0@dev",
         "componenta/config": "^4.0",

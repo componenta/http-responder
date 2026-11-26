@@ -2,7 +2,8 @@ name: DI 6 and response emission integration
 
 on:
   push:
-    branches: [fix/http-response-audit]
+    branches: [main, fix/http-response-audit]
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -14,12 +15,6 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          persist-credentials: false
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          repository: componenta/http-emitter
-          ref: 82f4b773677979ec1a79f97bf9e8ae1dd0d4a097
-          path: .audit/http-emitter
           persist-credentials: false
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
