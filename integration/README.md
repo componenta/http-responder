@@ -2,7 +2,7 @@
 
 This fixture installs released Componenta Config 4 and MIME Type Detector 2, together with these pinned development snapshots:
 
-- `componenta/http-emitter` — `73a3d13d7d9f2033cf170e9d73dd1e6b2d72ddff`
+- `componenta/http-emitter` — `82f4b773677979ec1a79f97bf9e8ae1dd0d4a097`
 - `componenta/di` — `e203077d12048936f078d37d1cf3badd661e1716`
 - `componenta/validation` — `59abbe8d1388fe9ccc016c12dc12a2de389685f7` (compat/mimetype-detector-v2, prospective 3.2)
 
