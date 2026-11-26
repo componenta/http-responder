@@ -1,5 +1,7 @@
 # Componenta HTTP Responder
 
+The configuration provider supports Componenta Config 3 and 4.
+
 Response builder for PSR-7 HTTP responses. The package centralizes common response creation: JSON, text, HTML, redirects, downloads, inline files, error responses, and cache headers.
 
 Use this package in controllers, route handlers, and middleware that need to create responses without depending on a concrete PSR-7 implementation.
