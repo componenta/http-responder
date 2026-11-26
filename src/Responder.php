@@ -471,7 +471,7 @@ final readonly class Responder
         }
         $stream = $this->normalizeBody($body);
 
-        $size = $stream->getSize();
+        $size = $this->prepareLength($stream);
 
         $response = $this->responseFactory
             ->createResponse($status)
@@ -482,7 +482,7 @@ final readonly class Responder
             ->withoutHeader('Trailer')
             ->withBody($stream);
 
-        if ($size !== null && $stream->isSeekable()) {
+        if ($size !== null) {
             $response = $response->withHeader('Content-Length', (string) $size);
         }
 
@@ -891,6 +891,8 @@ final readonly class Responder
             ? $content
             : $this->streamFactory->createStream($content);
 
+        $size = $this->prepareLength($body);
+
         $response = $this->responseFactory
             ->createResponse($status)
             ->withoutHeader('Content-Length')
@@ -903,13 +905,26 @@ final readonly class Responder
             $response = $response->withHeader('Content-Type', $contentType);
         }
 
-        $size = $body->getSize();
-
-        if ($size !== null && $body->isSeekable()) {
+        if ($size !== null) {
             $response = $response->withHeader('Content-Length', (string) $size);
         }
 
         return $response;
+    }
+
+    /**
+     * A seekable stream represents its whole body. A non-seekable stream
+     * represents only its remaining bytes, whose length is not inferred.
+     */
+    private function prepareLength(StreamInterface $body): ?int
+    {
+        if (!$body->isSeekable()) {
+            return null;
+        }
+
+        $body->rewind();
+
+        return $body->getSize();
     }
 
     /** Only ordinary local filesystem paths may be passed to the file API. */

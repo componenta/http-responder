@@ -116,3 +116,5 @@ The runtime constraint is `componenta/mimetype-detector: ^2.0`. Until that relea
 ## Tests and benchmarks
 
 `composer check` runs Pest and PHPStan. `composer mutation` uses the package's own source and Pest mutation testing. `composer benchmark` runs PHPBench over construction, text, JSON, response dispatch, redirects, downloads, empty responses and cache headers. The MIME detector is replaced with a fixed public-contract stub in these benchmarks; the detector itself is not benchmarked.
+
+Seekable response bodies are rewound before being attached so a consumer can read the whole representation from its current cursor. Non-seekable bodies retain their current cursor; their total stream size is not used as the response length.

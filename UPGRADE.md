@@ -8,3 +8,4 @@
 - When no content is permitted, the response does not consume or take ownership of caller-owned streams. Previously created responses passed to `respond()` still pass through unchanged.
 
 The builder is not a transport, authorization layer, range handler, or upload safety validator. For 401 responses, the caller must provide the appropriate authentication challenge before emission; for 206 responses, it must provide the correct range metadata.
+- Seekable response bodies are now rewound during response construction. Non-seekable bodies retain their cursor without an inferred content length.
