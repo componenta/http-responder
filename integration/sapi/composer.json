@@ -1,0 +1,40 @@
+{
+    "name": "componenta/http-response-sapi-fixture",
+    "description": "Isolated responder/emitter interoperability in native CGI",
+    "type": "project",
+    "license": "MIT",
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../..",
+            "options": {
+                "symlink": true,
+                "versions": {
+                    "componenta/http-responder": "2.0.x-dev"
+                }
+            }
+        },
+        {
+            "type": "path",
+            "url": "../../.audit/*",
+            "options": {
+                "symlink": true,
+                "versions": {
+                    "componenta/http-emitter": "2.0.x-dev",
+                    "componenta/mimetype-detector": "2.0.x-dev"
+                }
+            }
+        }
+    ],
+    "require": {
+        "php": "^8.4",
+        "componenta/http-responder": "^2.0@dev",
+        "componenta/http-emitter": "^2.0@dev",
+        "componenta/mimetype-detector": "^2.0@dev",
+        "componenta/config": "^4.0",
+        "nyholm/psr7": "^1.8.2",
+        "psr/http-factory": "^1.1"
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

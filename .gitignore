@@ -10,3 +10,5 @@ integration/composer.lock
 /composer.lock
 /integration/vendor/
 /integration/composer.lock
+/integration/sapi/vendor/
+/integration/sapi/composer.lock
