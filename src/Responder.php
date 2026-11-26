@@ -81,6 +81,10 @@ final readonly class Responder
             return $content;
         }
 
+        if ($code !== null) {
+            $this->validateStatusCode($code);
+        }
+
         if ($content instanceof StreamInterface) {
             return $this->createResponse(
                 $content,
@@ -136,7 +140,7 @@ final readonly class Responder
                 return $this->empty($code);
             }
             return $this->createResponse(
-                $this->streamFactory->createStreamFromResource($content),
+                $content,
                 $code ?? 200,
                 $contentType ?? self::DEFAULT_BINARY_TYPE,
             );
@@ -465,13 +469,10 @@ final readonly class Responder
         $this->validateDisposition($disposition);
         $this->validateFilename($filename);
 
+        $this->validateFileBody($body);
         if (!self::allowsContent($status)) {
-            $this->validateFileBody($body);
             return $this->empty($status);
         }
-        $stream = $this->normalizeBody($body);
-
-        $size = $this->prepareLength($stream);
 
         $response = $this->responseFactory
             ->createResponse($status)
@@ -479,8 +480,11 @@ final readonly class Responder
             ->withHeader('Content-Disposition', "$disposition; {$this->encodeFilename($filename)}")
             ->withoutHeader('Content-Length')
             ->withoutHeader('Transfer-Encoding')
-            ->withoutHeader('Trailer')
-            ->withBody($stream);
+            ->withoutHeader('Trailer');
+
+        $stream = $this->normalizeBody($body);
+        $size = $this->prepareLength($stream);
+        $response = $response->withBody($stream);
 
         if ($size !== null) {
             $response = $response->withHeader('Content-Length', (string) $size);
@@ -879,7 +883,8 @@ final readonly class Responder
         return $status >= 200 && $status !== 204 && $status !== 205 && $status !== 304;
     }
 
-    private function createResponse(string|StreamInterface $content, int $status, string $contentType): ResponseInterface
+    /** @param string|StreamInterface|resource $content */
+    private function createResponse(mixed $content, int $status, string $contentType): ResponseInterface
     {
         $this->validateStatusCode($status);
 
@@ -887,23 +892,22 @@ final readonly class Responder
             return $this->empty($status);
         }
 
-        $body = $content instanceof StreamInterface
-            ? $content
-            : $this->streamFactory->createStream($content);
-
-        $size = $this->prepareLength($body);
-
         $response = $this->responseFactory
             ->createResponse($status)
             ->withoutHeader('Content-Length')
             ->withoutHeader('Transfer-Encoding')
             ->withoutHeader('Trailer')
-            ->withoutHeader('Content-Type')
-            ->withBody($body);
+            ->withoutHeader('Content-Type');
 
         if ($contentType !== '') {
             $response = $response->withHeader('Content-Type', $contentType);
         }
+
+        // Validate response fields before the stream factory can take
+        // ownership of a caller-supplied resource.
+        $body = $this->normalizeBody($content);
+        $size = $this->prepareLength($body);
+        $response = $response->withBody($body);
 
         if ($size !== null) {
             $response = $response->withHeader('Content-Length', (string) $size);
@@ -918,6 +922,9 @@ final readonly class Responder
      */
     private function prepareLength(StreamInterface $body): ?int
     {
+        if (!$body->isReadable()) {
+            throw new InvalidArgumentException('Response body must be a readable stream.');
+        }
         if (!$body->isSeekable()) {
             return null;
         }
