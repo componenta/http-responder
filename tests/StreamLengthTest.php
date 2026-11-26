@@ -42,3 +42,55 @@ it('prepares a seekable body from the start so its declared length matches the r
         ->and($response->getBody()->getContents())->toBe('prefix:payload');
 })->with(['respond', 'file']);
 
+
+
+it('rejects unreadable content streams instead of building an unusable response', function (string $method): void {
+    $factory = new Psr17Factory();
+    $stream = $this->createStub(\Psr\Http\Message\StreamInterface::class);
+    $stream->method('isReadable')->willReturn(false);
+    $stream->method('isSeekable')->willReturn(false);
+    $responder = new Responder($factory, $factory);
+
+    expect(fn() => $method === 'respond'
+        ? $responder->respond(content: $stream)
+        : $responder->file($stream, 'data.txt', 'text/plain'))
+        ->toThrow(\InvalidArgumentException::class);
+})->with(['respond', 'file']);
+
+it('validates an invalid status before wrapping a caller-owned resource', function (): void {
+    $factory = new Psr17Factory();
+    $streams = $this->createMock(\Psr\Http\Message\StreamFactoryInterface::class);
+    $streams->expects($this->never())->method('createStreamFromResource');
+    $resource = fopen('php://temp', 'w+b');
+    if ($resource === false) {
+        throw new \RuntimeException('Cannot create fixture.');
+    }
+    try {
+        $responder = new Responder($factory, $streams);
+        expect(fn() => $responder->respond(600, $resource))->toThrow(\InvalidArgumentException::class)
+            ->and(is_resource($resource))->toBeTrue();
+    } finally {
+        if (is_resource($resource)) {
+            fclose($resource);
+        }
+    }
+});
+
+it('validates file response fields before acquiring a caller resource', function (): void {
+    $factory = new Psr17Factory();
+    $streams = $this->createMock(\Psr\Http\Message\StreamFactoryInterface::class);
+    $streams->expects($this->never())->method('createStreamFromResource');
+    $resource = fopen('php://temp', 'w+b');
+    if ($resource === false) {
+        throw new \RuntimeException('Cannot create fixture.');
+    }
+    try {
+        $responder = new Responder($factory, $streams);
+        expect(fn() => $responder->file($resource, 'data.txt', "text/plain\r\nX-Invalid: bad"))->toThrow(\InvalidArgumentException::class)
+            ->and(is_resource($resource))->toBeTrue();
+    } finally {
+        if (is_resource($resource)) {
+            fclose($resource);
+        }
+    }
+});

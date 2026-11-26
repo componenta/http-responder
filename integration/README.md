@@ -2,7 +2,7 @@
 
 This fixture installs Config 4 and pinned snapshots of the other dependencies:
 
-- `componenta/mimetype-detector` — `8b78dfb1533bcb0548ad8de1d1aed60a2beea2fd`
+- `componenta/mimetype-detector` — `0d4b88e899fe828f0af41c57f6d47f615191d901`
 - `componenta/http-emitter` — `26aa5a3131068df8ee9ddc8acaf46227f70b0c1d`
 - `componenta/di` — `e203077d12048936f078d37d1cf3badd661e1716`
 
