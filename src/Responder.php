@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Componenta\Http;
 
-use Componenta\Detector\DetectorInterface;
+use Componenta\Detector\MimeTypeDetectorInterface;
 use Componenta\Detector\FinfoDetector;
 use Componenta\Detector\MimeMap;
 use Componenta\Detector\MimeMapInterface;
@@ -38,14 +38,16 @@ final readonly class Responder
     private const string DEFAULT_BINARY_TYPE = 'application/octet-stream';
 
     private MimeMapInterface $mimeMap;
+    private MimeTypeDetectorInterface $detector;
 
     public function __construct(
         private ResponseFactoryInterface $responseFactory,
         private StreamFactoryInterface $streamFactory,
-        private DetectorInterface $detector = new FinfoDetector(),
+        ?MimeTypeDetectorInterface $detector = null,
         ?MimeMapInterface $mimeMap = null,
     ) {
         $this->mimeMap = $mimeMap ?? new MimeMap();
+        $this->detector = $detector ?? new FinfoDetector($this->mimeMap);
     }
 
     /**
@@ -95,7 +97,7 @@ final readonly class Responder
             return $this->createResponse(
                 $content,
                 $code ?? 200,
-                $contentType ?? $this->detector->detectMimeType($content) ?? self::DEFAULT_BINARY_TYPE,
+                $contentType ?? $this->detector->detectMimeType($content)?->value ?? self::DEFAULT_BINARY_TYPE,
             );
         }
 
@@ -125,7 +127,7 @@ final readonly class Responder
             return $this->createResponse(
                 $stringContent,
                 $code ?? 200,
-                $contentType ?? $this->detector->detectMimeType($stringContent) ?? self::DEFAULT_BINARY_TYPE,
+                $contentType ?? $this->detector->detectMimeType($stringContent)?->value ?? self::DEFAULT_BINARY_TYPE,
             );
         }
 
@@ -470,7 +472,7 @@ final readonly class Responder
 
         if ($contentType === null) {
             $contentType = $stream->isSeekable()
-                ? ($this->detector->detectMimeType($stream) ?? $this->getMimeTypeByExtension($filename))
+                ? ($this->detector->detectMimeType($stream)?->value ?? $this->getMimeTypeByExtension($filename))
                 : $this->getMimeTypeByExtension($filename);
         }
 

@@ -1,6 +1,6 @@
 # Componenta HTTP Responder
 
-The configuration provider supports Componenta Config 3 and 4.
+Requires Componenta Config 4 and MIME Type Detector 2.
 
 Response builder for PSR-7 HTTP responses. The package centralizes common response creation: JSON, text, HTML, redirects, downloads, inline files, error responses, and cache headers.
 
@@ -29,6 +29,8 @@ Register one PSR-17 implementation package, for example `componenta/http-psr-nyh
 |---|---|
 | `ResponseFactoryInterface` | Creates PSR-7 responses. |
 | `StreamFactoryInterface` | Creates body streams. |
+| `MimeTypeDetectorInterface` | Detects a MIME type from content. |
+| `MimeMapInterface` | Maps filename extensions to MIME types. |
 
 The provider also includes the mime type detector provider for file responses.
 
@@ -104,3 +106,7 @@ Use `withCache()`, `withNoCache()`, `withEtag()`, and `withLastModified()` to ad
 ## Errors
 
 The responder throws `InvalidArgumentException` when it receives unsupported content, invalid status codes, invalid redirect or header values, unreadable files, invalid filenames, invalid cache values, or invalid JSONP callback names.
+
+## Development against the next MIME detector release
+
+The runtime constraint is `componenta/mimetype-detector: ^2.0`. Until that release is published, the audit CI uses the exact public refactor snapshot `8b78dfb1533bcb0548ad8de1d1aed60a2beea2fd` through a local Composer path repository with a temporary `^2.0@dev` constraint. The published package must not depend on a branch alias. The detector is not vendored or modified.

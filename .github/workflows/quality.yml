@@ -1,0 +1,44 @@
+name: Quality
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.4', '8.5']
+        dependencies: [lowest, highest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: componenta/mimetype-detector
+          ref: 8b78dfb1533bcb0548ad8de1d1aed60a2beea2fd
+          path: .audit/mimetype-detector
+          persist-credentials: false
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          extensions: fileinfo, ctype, mbstring, dom
+          tools: composer:2.9.8@sha256:59b2c50e10cafa0d8efc19ede9a326d782f096c674a26baf98cf042ce23de890
+      - run: composer validate --strict
+      - name: Use the pinned, unreleased MIME detector 2 snapshot in CI only
+        run: |
+          composer config --json repositories.detector '{"type":"path","url":".audit/mimetype-detector","options":{"symlink":true,"versions":{"componenta/mimetype-detector":"2.0.x-dev"}}}'
+          composer require --no-update --no-interaction 'componenta/mimetype-detector:^2.0@dev'
+      - if: matrix.dependencies == 'highest'
+        run: composer update --no-interaction --prefer-dist --no-progress
+      - if: matrix.dependencies == 'lowest'
+        run: composer update --no-interaction --prefer-dist --prefer-lowest --prefer-stable --no-progress
+      - run: composer audit
+      - run: composer check

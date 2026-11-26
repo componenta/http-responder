@@ -6,23 +6,37 @@
     "require": {
         "php": "^8.4",
         "componenta/arrayable": "^1.0",
-        "componenta/config": "^3.0 || ^4.0",
-        "componenta/mimetype-detector": "^1.0",
+        "componenta/config": "^4.0",
+        "componenta/mimetype-detector": "^2.0",
         "psr/container": "^2.0",
         "psr/http-message": "^2.0",
-        "psr/http-factory": "^1.0"
+        "psr/http-factory": "^1.1"
     },
     "require-dev": {
-        "nyholm/psr7": "^1.8",
-        "pestphp/pest": "^4.0"
+        "nyholm/psr7": "^1.8.2",
+        "pestphp/pest": "^4.0",
+        "phpstan/phpstan": "^2.1",
+        "phpbench/phpbench": "^1.7"
     },
     "config": {
         "allow-plugins": {
             "pestphp/pest-plugin": true
+        },
+        "sort-packages": true,
+        "audit": {
+            "ignore-abandoned": {
+                "doctrine/annotations": "Transitive PHPBench development dependency; benchmarks use PHP attributes. Security advisories remain enforced."
+            }
         }
     },
     "scripts": {
-        "test": "@php vendor/bin/pest"
+        "test": "@php vendor/bin/pest",
+        "phpstan": "@php vendor/bin/phpstan analyse src --level=8 --no-progress",
+        "check": [
+            "@phpstan",
+            "@test"
+        ],
+        "benchmark": "@php vendor/bin/phpbench run --report=aggregate"
     },
     "autoload": {
         "psr-4": {
@@ -37,8 +51,8 @@
             ]
         },
         "branch-alias": {
-            "dev-main": "1.0.x-dev",
-            "dev-fix/callback-dependency-baseline-2026-11-26": "1.0.x-dev"
+            "dev-main": "2.0.x-dev",
+            "dev-fix/http-response-audit": "2.0.x-dev"
         }
     }
 }

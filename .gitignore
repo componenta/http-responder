@@ -6,3 +6,5 @@
 vendor/
 .phpunit.cache/
 integration/composer.lock
+/.audit/
+/composer.lock

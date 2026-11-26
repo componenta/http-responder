@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Componenta\Http;
 
 use Componenta\Detector\ConfigProvider as DetectorConfigProvider;
-use Componenta\Detector\DetectorInterface;
+use Componenta\Detector\MimeTypeDetectorInterface;
 use Componenta\Detector\MimeMapInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
@@ -25,9 +25,9 @@ class ResponderConfigProvider extends DetectorConfigProvider
                 if (!$responseFactory instanceof ResponseFactoryInterface || !$streamFactory instanceof StreamFactoryInterface) {
                     throw new UnexpectedValueException('Responder requires PSR-17 response and stream factories.');
                 }
-                $detector = $container->get(DetectorInterface::class);
+                $detector = $container->get(MimeTypeDetectorInterface::class);
                 $mimeMap = $container->get(MimeMapInterface::class);
-                if (!$detector instanceof DetectorInterface || !$mimeMap instanceof MimeMapInterface) {
+                if (!$detector instanceof MimeTypeDetectorInterface || !$mimeMap instanceof MimeMapInterface) {
                     throw new UnexpectedValueException('Responder requires MIME detector and map services.');
                 }
                 return new Responder($responseFactory, $streamFactory, $detector, $mimeMap);
