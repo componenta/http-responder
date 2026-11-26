@@ -107,9 +107,9 @@ Use `withCache()`, `withNoCache()`, `withEtag()`, and `withLastModified()` to ad
 
 The responder throws `InvalidArgumentException` when it receives unsupported content, invalid status codes, invalid redirect or header values, unreadable files, invalid filenames, invalid cache values, or invalid JSONP callback names.
 
-## Development against the next MIME detector release
+## Dependencies
 
-The runtime constraint is `componenta/mimetype-detector: ^2.0`. Until that release is published, the audit CI uses the exact public refactor snapshot `7131260a4f28724ff3e111a019d0260a2edacc57` through a local Composer path repository with a temporary `^2.0@dev` constraint. The published package must not depend on a branch alias. The detector is not vendored or modified.
+The runtime and quality checks use the published `componenta/mimetype-detector ^2.0` release series, without a development-version override. No detector-specific tests or benchmarks are run here.
 
 `methodNotAllowed()` preserves the exact case of valid HTTP method tokens and rejects invalid entries. `withEtag()` requires a non-empty RFC 9110 entity-tag value without surrounding quotes. JSONP is legacy script execution, not a safe way to expose private or authenticated data; only use an application-authorized callback and public data. Treat detected MIME types and filenames as metadata, not proof that active content is safe to display inline.
 

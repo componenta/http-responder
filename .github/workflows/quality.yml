@@ -19,12 +19,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          repository: componenta/mimetype-detector
-          ref: 7131260a4f28724ff3e111a019d0260a2edacc57
-          path: .audit/mimetype-detector
-          persist-credentials: false
       - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
         with:
           php-version: ${{ matrix.php }}
@@ -32,10 +26,6 @@ jobs:
           extensions: fileinfo, ctype, mbstring, dom
           tools: composer:2.9.8@sha256:59b2c50e10cafa0d8efc19ede9a326d782f096c674a26baf98cf042ce23de890
       - run: composer validate --strict
-      - name: Use the pinned, unreleased MIME detector 2 snapshot in CI only
-        run: |
-          composer config --json repositories.detector '{"type":"path","url":".audit/mimetype-detector","options":{"symlink":true,"versions":{"componenta/mimetype-detector":"2.0.x-dev"}}}'
-          composer require --no-update --no-interaction 'componenta/mimetype-detector:^2.0@dev'
       - if: matrix.dependencies == 'highest'
         run: composer update --no-interaction --prefer-dist --no-progress
       - if: matrix.dependencies == 'lowest'
@@ -51,12 +41,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          repository: componenta/mimetype-detector
-          ref: 7131260a4f28724ff3e111a019d0260a2edacc57
-          path: .audit/mimetype-detector
-          persist-credentials: false
       - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
         with:
           php-version: '8.5'
@@ -64,10 +48,6 @@ jobs:
           extensions: fileinfo, ctype, mbstring, dom
           tools: composer:2.9.8@sha256:59b2c50e10cafa0d8efc19ede9a326d782f096c674a26baf98cf042ce23de890
       - run: composer validate --strict
-      - name: Resolve unreleased detector in test environment
-        run: |
-          composer config --json repositories.detector '{"type":"path","url":".audit/mimetype-detector","options":{"symlink":true,"versions":{"componenta/mimetype-detector":"2.0.x-dev"}}}'
-          composer require --no-update --no-interaction 'componenta/mimetype-detector:^2.0@dev'
       - run: composer update --no-interaction --prefer-dist --no-progress
       - run: composer audit
       - run: composer mutation

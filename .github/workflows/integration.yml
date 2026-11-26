@@ -17,12 +17,6 @@ jobs:
           persist-credentials: false
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          repository: componenta/mimetype-detector
-          ref: 7131260a4f28724ff3e111a019d0260a2edacc57
-          path: .audit/mimetype-detector
-          persist-credentials: false
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
           repository: componenta/http-emitter
           ref: 73a3d13d7d9f2033cf170e9d73dd1e6b2d72ddff
           path: .audit/http-emitter
@@ -32,6 +26,12 @@ jobs:
           repository: componenta/di
           ref: e203077d12048936f078d37d1cf3badd661e1716
           path: .audit/di
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: componenta/validation
+          ref: 59abbe8d1388fe9ccc016c12dc12a2de389685f7
+          path: .audit/validation
           persist-credentials: false
       - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
         with:

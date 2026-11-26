@@ -20,8 +20,7 @@
             "options": {
                 "symlink": true,
                 "versions": {
-                    "componenta/http-emitter": "2.0.x-dev",
-                    "componenta/mimetype-detector": "2.0.x-dev"
+                    "componenta/http-emitter": "2.0.x-dev"
                 }
             }
         }
@@ -30,7 +29,7 @@
         "php": "^8.4",
         "componenta/http-responder": "^2.0@dev",
         "componenta/http-emitter": "^2.0@dev",
-        "componenta/mimetype-detector": "^2.0@dev",
+        "componenta/mimetype-detector": "^2.0",
         "componenta/config": "^4.0",
         "nyholm/psr7": "^1.8.2",
         "psr/http-factory": "^1.1",
