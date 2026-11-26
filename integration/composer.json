@@ -21,8 +21,7 @@
                 "symlink": true,
                 "versions": {
                     "componenta/http-emitter": "2.0.x-dev",
-                    "componenta/di": "6.0.x-dev",
-                    "componenta/validation": "3.2.x-dev"
+                    "componenta/di": "6.0.x-dev"
                 }
             }
         }
@@ -36,7 +35,7 @@
         "componenta/config": "^4.0",
         "nyholm/psr7": "^1.8.2",
         "psr/http-factory": "^1.1",
-        "componenta/validation": "^3.2@dev"
+        "componenta/validation": "^3.2"
     },
     "minimum-stability": "stable",
     "prefer-stable": true
