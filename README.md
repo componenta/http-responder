@@ -120,3 +120,5 @@ The runtime constraint is `componenta/mimetype-detector: ^2.0`. Until that relea
 Seekable response bodies are rewound before being attached so a consumer can read the whole representation from its current cursor. Non-seekable bodies retain their current cursor; their total stream size is not used as the response length.
 
 When content is permitted, body streams must be readable. Status and response fields are validated before wrapping caller-supplied resources; once successfully wrapped, stream ownership follows PSR-7/PSR-17 semantics.
+
+New responses discard factory defaults that describe a different representation, message framing, file offload or range capability. Application-wide fields (for example, security headers) are retained. The `respond()` pass-through for an existing `ResponseInterface` still returns it unchanged. Contract tests run against Nyholm and Guzzle PSR-17 factories.

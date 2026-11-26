@@ -162,11 +162,11 @@ final readonly class Responder
     {
         $this->validateStatusCode($status);
 
-        $response = $this->responseFactory->createResponse($status);
+        $response = $this->newResponse($status);
         if ($response->getBody()->getSize() !== 0) {
             $response = $response->withBody($this->streamFactory->createStream());
         }
-        return $response->withoutHeader('Content-Length')->withoutHeader('Transfer-Encoding')->withoutHeader('Trailer');
+        return $response;
     }
 
     /**
@@ -474,13 +474,9 @@ final readonly class Responder
             return $this->empty($status);
         }
 
-        $response = $this->responseFactory
-            ->createResponse($status)
+        $response = $this->newResponse($status)
             ->withHeader('Content-Type', $contentType ?? $this->getMimeTypeByExtension($filename))
-            ->withHeader('Content-Disposition', "$disposition; {$this->encodeFilename($filename)}")
-            ->withoutHeader('Content-Length')
-            ->withoutHeader('Transfer-Encoding')
-            ->withoutHeader('Trailer');
+            ->withHeader('Content-Disposition', "$disposition; {$this->encodeFilename($filename)}");
 
         $stream = $this->normalizeBody($body);
         $size = $this->prepareLength($stream);
@@ -883,6 +879,29 @@ final readonly class Responder
         return $status >= 200 && $status !== 204 && $status !== 205 && $status !== 304;
     }
 
+    /**
+     * A factory can supply application-wide defaults such as security headers.
+     * Do not let a default for a previous representation or offload target
+     * survive creation of a new response. Only clone if a field is present.
+     */
+    private function newResponse(int $status): ResponseInterface
+    {
+        $response = $this->responseFactory->createResponse($status);
+        foreach ($response->getHeaders() as $name => $_) {
+            if (in_array(strtolower($name), [
+                'content-length', 'transfer-encoding', 'trailer', 'content-type',
+                'content-encoding', 'content-language', 'content-location',
+                'content-range', 'content-disposition', 'content-md5', 'content-digest',
+                'repr-digest', 'accept-ranges', 'etag', 'last-modified',
+                'x-accel-redirect', 'x-sendfile', 'x-accel-limit-rate',
+            ], true)) {
+                $response = $response->withoutHeader($name);
+            }
+        }
+
+        return $response;
+    }
+
     /** @param string|StreamInterface|resource $content */
     private function createResponse(mixed $content, int $status, string $contentType): ResponseInterface
     {
@@ -892,12 +911,7 @@ final readonly class Responder
             return $this->empty($status);
         }
 
-        $response = $this->responseFactory
-            ->createResponse($status)
-            ->withoutHeader('Content-Length')
-            ->withoutHeader('Transfer-Encoding')
-            ->withoutHeader('Trailer')
-            ->withoutHeader('Content-Type');
+        $response = $this->newResponse($status);
 
         if ($contentType !== '') {
             $response = $response->withHeader('Content-Type', $contentType);

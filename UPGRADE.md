@@ -11,3 +11,5 @@ The builder is not a transport, authorization layer, range handler, or upload sa
 - Seekable response bodies are now rewound during response construction. Non-seekable bodies retain their cursor without an inferred content length.
 
 - Unreadable body streams are rejected. Status and response fields are validated before a caller resource is wrapped.
+
+- New responses discard stale representation, framing and file-offload defaults from a response factory; unrelated application-wide headers are retained.
