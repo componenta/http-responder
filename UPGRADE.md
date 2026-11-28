@@ -1,6 +1,6 @@
 # Upgrading to 2.x
 
-- Requires Componenta Config 4 and MIME Type Detector 2. Update the dependencies before installing the new responder. The public detector dependency is narrowed to `MimeTypeDetectorInterface`; pass a compatible detector returning nullable `MimeType` values.
+- Requires Componenta Config 4 and MIME Type Detector 2 or 3. Update the dependencies before installing the new responder. The public detector dependency is narrowed to `MimeTypeDetectorInterface`; pass a compatible detector returning nullable `MimeType` values.
 - `back()` accepts root-relative referrers by default. To allow an absolute referrer from the application's own origin, pass `trustedOrigin: 'https://shop.example'`. Untrusted or malformed referrers use the trusted fallback.
 - File helpers do not advertise `Accept-Ranges` merely because a body can be rewound. Applications that implement byte ranges must explicitly set the applicable metadata.
 - File paths must identify readable regular files, not stream wrappers. File names must be valid UTF-8 basenames. International names use an ASCII fallback and an extended `filename*` parameter.

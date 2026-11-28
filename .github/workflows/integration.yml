@@ -2,7 +2,7 @@ name: DI 6 and response emission integration
 
 on:
   push:
-    branches: [main, fix/http-response-audit]
+    branches: [main, fix/http-response-audit, compat/mimetype-detector-v3]
   pull_request:
   workflow_dispatch:
 
@@ -29,6 +29,8 @@ jobs:
           extensions: fileinfo, mbstring, ctype
           tools: composer:2.9.8@sha256:59b2c50e10cafa0d8efc19ede9a326d782f096c674a26baf98cf042ce23de890
       - run: composer validate --working-dir=integration --strict
+      - name: Select Detector 3 candidate
+        run: bash tools/ci-detector.sh integration 3 validation
       - run: composer update --working-dir=integration --no-interaction --prefer-dist --no-progress
       - run: composer audit --working-dir=integration
       - name: Verify both DI discovery strategies and emit the resulting response

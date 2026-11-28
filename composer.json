@@ -7,7 +7,7 @@
         "php": "^8.4",
         "componenta/arrayable": "^1.0",
         "componenta/config": "^4.0",
-        "componenta/mimetype-detector": "^2.0",
+        "componenta/mimetype-detector": "^2.0 || ^3.0",
         "psr/container": "^2.0",
         "psr/http-message": "^2.0",
         "psr/http-factory": "^1.1"
@@ -53,8 +53,8 @@
             ]
         },
         "branch-alias": {
-            "dev-main": "2.0.x-dev",
-            "dev-fix/http-response-audit": "2.0.x-dev"
+            "dev-main": "2.1.x-dev",
+            "dev-compat/mimetype-detector-v3": "2.1.x-dev"
         }
     }
 }

@@ -1,6 +1,6 @@
 # Componenta HTTP Responder
 
-Requires Componenta Config 4 and MIME Type Detector 2.
+Requires Componenta Config 4 and MIME Type Detector 2 or 3.
 
 Response builder for PSR-7 HTTP responses. The package centralizes common response creation: JSON, text, HTML, redirects, downloads, inline files, error responses, and cache headers.
 
@@ -78,7 +78,7 @@ Redirect URLs must be non-empty URI references without raw spaces, control chara
 
 ### Files
 
-`download()` and `inline()` accept a `StreamInterface`, stream resource, or string content. `downloadFile()` and `inlineFile()` read ordinary readable regular filesystem files; stream wrappers and directories are rejected. The application must authorize the path before calling these helpers. MIME detection uses the injected MIME 2 contract and map. A filename must be a valid UTF-8 basename; non-ASCII names get an ASCII fallback plus RFC 8187 `filename*`. The responder never infers range support solely from seekability.
+`download()` and `inline()` accept a `StreamInterface`, stream resource, or string content. `downloadFile()` and `inlineFile()` read ordinary readable regular filesystem files; stream wrappers and directories are rejected. The application must authorize the path before calling these helpers. MIME detection uses the injected MIME detector contract and map. A filename must be a valid UTF-8 basename; non-ASCII names get an ASCII fallback plus RFC 8187 `filename*`. The responder never infers range support solely from seekability.
 
 ```php
 $response = $responder->inlineFile('/srv/files/manual.pdf');
@@ -109,7 +109,7 @@ The responder throws `InvalidArgumentException` when it receives unsupported con
 
 ## Dependencies
 
-The runtime and quality checks use the published `componenta/mimetype-detector ^2.0` release series, without a development-version override. No detector-specific tests or benchmarks are run here.
+The runtime supports `componenta/mimetype-detector ^2.0 || ^3.0`. Quality checks exercise both series, temporarily pinning the unpublished 3.0.0 candidate and its reader dependencies in CI. Remove the temporary selection script once the stable releases are available. No detector-specific benchmarks are run here.
 
 `methodNotAllowed()` preserves the exact case of valid HTTP method tokens and rejects invalid entries. `withEtag()` requires a non-empty RFC 9110 entity-tag value without surrounding quotes. JSONP is legacy script execution, not a safe way to expose private or authenticated data; only use an application-authorized callback and public data. Treat detected MIME types and filenames as metadata, not proof that active content is safe to display inline.
 

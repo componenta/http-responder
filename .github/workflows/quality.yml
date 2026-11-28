@@ -16,6 +16,7 @@ jobs:
       matrix:
         php: ['8.4', '8.5']
         dependencies: [lowest, highest]
+        detector: ['2', '3']
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -27,6 +28,8 @@ jobs:
           extensions: fileinfo, ctype, mbstring, dom
           tools: composer:2.9.8@sha256:59b2c50e10cafa0d8efc19ede9a326d782f096c674a26baf98cf042ce23de890
       - run: composer validate --strict
+      - name: Select detector test version
+        run: bash tools/ci-detector.sh . "${{ matrix.detector }}"
       - if: matrix.dependencies == 'highest'
         run: composer update --no-interaction --prefer-dist --no-progress
       - if: matrix.dependencies == 'lowest'
@@ -49,6 +52,8 @@ jobs:
           extensions: fileinfo, ctype, mbstring, dom
           tools: composer:2.9.8@sha256:59b2c50e10cafa0d8efc19ede9a326d782f096c674a26baf98cf042ce23de890
       - run: composer validate --strict
+      - name: Select Detector 3 candidate
+        run: bash tools/ci-detector.sh . 3
       - run: composer update --no-interaction --prefer-dist --no-progress
       - run: composer audit
       - run: composer mutation
